@@ -105,6 +105,7 @@ button{cursor:pointer}
 
 /* Attributes */
 .attrs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:600px){.attrs{grid-template-columns:1fr}}
 .attr{gap:6px;padding:10px 12px 12px}
 .attr .name{font-family:var(--f-label);font-weight:800;letter-spacing:.08em;font-size:15px}
 .attr .cur{font-family:var(--f-body);font-weight:700;font-size:44px;line-height:1;text-align:center}
@@ -153,13 +154,14 @@ button{cursor:pointer}
 .path .pg.now{background:var(--accent);color:var(--accent-ink);padding:1px 7px;border-radius:3px}
 .path .ar{color:var(--muted);margin:0 .35em}
 .path .none{color:var(--muted);font-style:italic;font-size:15px}
-.additem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:end;border-top:1px solid var(--rule);padding-top:10px}
+.additem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:end;border-top:1px solid var(--rule);padding-top:10px}
 .additem .nm{grid-column:1/-1}
 .additem input,.additem select{background:var(--paper);border:1.5px solid var(--rule);border-radius:4px;padding:5px 8px;min-width:0;width:100%}
-.additem .bn input{width:7ch;text-align:center}
-.additem .btn{height:34px}
-.list li .ib{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--muted);font-family:var(--f-label);font-weight:700}
-.list li .ib input{width:3.6ch;text-align:center;background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:1px 2px;font-weight:700;color:var(--ink)}
+.additem .bn input{width:4.5em;min-width:4.5em;text-align:center;font-size:16px;font-weight:700;-moz-appearance:textfield;appearance:textfield}
+.additem .btn{height:34px;grid-column:1/-1;justify-self:end;min-width:9em;justify-content:center}
+.list li .ib{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);font-family:var(--f-label);font-weight:700;flex:none}
+.list li .ib input{width:3.2em;min-width:3.2em;height:30px;text-align:center;background:var(--paper);border:1.5px solid var(--ink-soft);border-radius:4px;padding:0 4px;font-size:16px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
+.list li .ib input::-webkit-inner-spin-button,.list li .ib input::-webkit-outer-spin-button,.additem .bn input::-webkit-inner-spin-button,.additem .bn input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .list li.counts .t{font-weight:700}
 .atk{font-size:14px;background:var(--paper);border:1.5px dashed var(--rule);border-radius:4px;padding:6px 10px}
 .atk b{font-size:16px}
@@ -380,7 +382,7 @@ textarea{width:100%;background:var(--paper);border:1.5px solid var(--rule);borde
           <form class="additem" data-form="equip">
             <label class="field nm"><span class="label">Item</span><input id="equipNew" placeholder="Ex.: Espada mágica" autocomplete="off"></label>
             <label class="field"><span class="label">Tipo</span><select id="equipTipo"><option value="outro">Comum</option><option value="arma">Arma</option><option value="protecao">Escudo / armadura</option><option value="joia">Joia / amuleto</option></select></label>
-            <label class="field bn"><span class="label">Bônus de ataque</span><input id="equipBonus" class="num" type="number" inputmode="numeric" min="0" max="6" value="0"></label>
+            <label class="field bn"><span class="label">Bônus de ataque</span><input id="equipBonus" class="num" type="number" inputmode="numeric" min="0" max="20" value="0"></label>
             <button class="btn sm primary">Adicionar</button>
           </form>
           <div class="atk" id="atkSummary"></div>
@@ -600,7 +602,7 @@ function renderGoods(){
   const ab=atkBonus(),contaIds=new Set(ab.conta.map(i=>i.id));
   const TT={outro:"",arma:"warn",protecao:"good",joia:"good"};
   $("#equipList").innerHTML=state.equip.length?state.equip.map(i=>`<li class="${contaIds.has(i.id)?"counts":""}"><span class="t">${esc(i.t)}${TIPO_ITEM[i.tipo]&&i.tipo!=="outro"?` <span class="tag ${TT[i.tipo]}">${TIPO_ITEM[i.tipo]}</span>`:""}</span>
-    <label class="ib" title="Bônus de ataque deste item">atq +<input type="number" min="0" max="6" inputmode="numeric" value="${+i.bonus||0}" data-ibonus="${i.id}" aria-label="Bônus de ataque de ${esc(i.t)}"></label>
+    <label class="ib" title="Bônus de ataque deste item">atq +<input type="number" min="0" max="20" inputmode="numeric" value="${+i.bonus||0}" data-ibonus="${i.id}" aria-label="Bônus de ataque de ${esc(i.t)}"></label>
     <button class="x" data-act="rmequip" data-id="${i.id}" aria-label="Remover ${esc(i.t)}">×</button></li>`).join(""):`<li class="empty">Mochila vazia</li>`;
   $("#atkSummary").innerHTML=ab.total?`Bônus de ataque em combate: <b class="num">+${ab.total}</b> <span class="why">(${ab.conta.map(i=>esc(i.t)+" +"+i.bonus).join(", ")})${ab.ignoradas.length?`. Só uma arma conta por vez: ${ab.ignoradas.map(i=>esc(i.t)).join(", ")} não soma.`:""}</span>`:`<span class="why">Nenhum item dá bônus de ataque. Ao adicionar uma espada, escudo ou joia que aumente o ataque, informe o bônus.</span>`;
   const TL={bonus:["good","Bônus"],penalidade:["warn","Penalidade"],maldicao:["bad","Maldição"],doenca:["bad","Doença"]};
@@ -972,7 +974,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="loadFile"&&t.files&&t.files[0]){loadFromFile(t.files[0]);return;}
-  if(t.dataset.ibonus){const it=state.equip.find(x=>x.id===t.dataset.ibonus);if(it){const v=Math.max(0,Math.min(6,parseInt(t.value,10)||0));if(v!==(+it.bonus||0)){commit();it.bonus=v;log(`Bônus de ataque de ${it.t}: +${v}.`);}renderGoods();renderLog();save();}return;}
+  if(t.dataset.ibonus){const it=state.equip.find(x=>x.id===t.dataset.ibonus);if(it){const v=Math.max(0,Math.min(20,parseInt(t.value,10)||0));if(v!==(+it.bonus||0)){commit();it.bonus=v;log(`Bônus de ataque de ${it.t}: +${v}.`);}renderGoods();renderLog();save();}return;}
   if(t.dataset.act==="exceder"){commit();state.exceder[t.dataset.k]=t.checked;if(!t.checked)setCur(t.dataset.k,state.cur[t.dataset.k]);renderAll();save();}
   if(t.dataset.ini){const k=t.dataset.ini,v=parseInt(t.value,10);if(v>=0&&v!==state.ini[k]){commit();const had=state.ini[k];state.ini[k]=v;if(!had&&!state.cur[k])state.cur[k]=v;if(!state.exceder[k]&&v)state.cur[k]=Math.min(state.cur[k],v);state.criado=true;log(`${NAMES[k]} inicial ${had?"corrigida":"anotada"}: ${v}.`);}renderAll();save();}
   if(t.dataset.mon!==undefined){const m=state.monstros[+t.dataset.mon];const f=t.dataset.f;commit();m[f]=f==="nome"?t.value:(t.value===""?"":String(Math.max(0,parseInt(t.value,10)||0)));if(f==="ene"&&(m.ene===""||+m.ene>0))m.derrotado=false;if(f!=="nome")t.value=m[f];if(noteEncounter(m))renderLog();const card=t.closest(".mon");card.classList.toggle("dead",m.derrotado);card.classList.toggle("blank",!m.nome&&m.hab===""&&m.ene==="");save();}
@@ -995,7 +997,7 @@ document.addEventListener("keydown",e=>{
 $("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
 document.addEventListener("submit",e=>{
   e.preventDefault();const f=e.target.dataset.form;
-  if(f==="equip"){const i=$("#equipNew");const v=i.value.trim();if(!v){i.focus();return;}const tipo=$("#equipTipo").value,bonus=Math.max(0,Math.min(6,parseInt($("#equipBonus").value,10)||0));
+  if(f==="equip"){const i=$("#equipNew");const v=i.value.trim();if(!v){i.focus();return;}const tipo=$("#equipTipo").value,bonus=Math.max(0,Math.min(20,parseInt($("#equipBonus").value,10)||0));
     commit();state.equip.push({id:uid(),t:v,tipo,bonus});
     log(`Adicionado à mochila: ${v}${tipo!=="outro"||bonus?` (${TIPO_ITEM[tipo].toLowerCase()}${bonus?`, +${bonus} de ataque`:""})`:""}.`);
     i.value="";$("#equipBonus").value="0";$("#equipTipo").value="outro";renderGoods();renderLog();renderAttrs();save();i.focus();}
