@@ -153,6 +153,30 @@ button{cursor:pointer}
 .path .pg.now{background:var(--accent);color:var(--accent-ink);padding:1px 7px;border-radius:3px}
 .path .ar{color:var(--muted);margin:0 .35em}
 .path .none{color:var(--muted);font-style:italic;font-size:15px}
+.additem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:end;border-top:1px solid var(--rule);padding-top:10px}
+.additem .nm{grid-column:1/-1}
+.additem input,.additem select{background:var(--paper);border:1.5px solid var(--rule);border-radius:4px;padding:5px 8px;min-width:0;width:100%}
+.additem .bn input{width:7ch;text-align:center}
+.additem .btn{height:34px}
+.list li .ib{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--muted);font-family:var(--f-label);font-weight:700}
+.list li .ib input{width:3.6ch;text-align:center;background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:1px 2px;font-weight:700;color:var(--ink)}
+.list li.counts .t{font-weight:700}
+.atk{font-size:14px;background:var(--paper);border:1.5px dashed var(--rule);border-radius:4px;padding:6px 10px}
+.atk b{font-size:16px}
+.atk .why{color:var(--muted);font-size:13px}
+.mon .rule{font-size:11.5px;color:var(--accent);font-family:var(--f-label);font-weight:700;letter-spacing:.03em;line-height:1.2}
+.mon .acts .x{flex:none}
+.rulebox{border:1.5px solid var(--accent);border-radius:4px;background:var(--paper);padding:6px 10px;font-size:14px}
+.rulebox b{font-family:var(--f-label);letter-spacing:.04em;color:var(--accent)}
+.rform{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rform .full{grid-column:1/-1}
+.rform input[type=number],.rform input[type=text],.rform textarea{background:var(--paper);border:1.5px solid var(--rule);border-radius:4px;padding:5px 8px;min-width:0;width:100%}
+.rform input[type=number]{width:7ch;text-align:center}
+.rform fieldset{grid-column:1/-1;border:1.5px solid var(--rule);border-radius:5px;padding:8px 12px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.rform fieldset legend{font-family:var(--f-label);font-weight:800;letter-spacing:.05em;padding:0 4px}
+.rform .chk{display:flex;gap:6px;align-items:center;font-size:14.5px}
+.rform .chk input{accent-color:var(--accent)}
+@media (max-width:520px){.rform,.rform fieldset{grid-template-columns:1fr}}
 .meter{height:6px;border-radius:3px;background:var(--paper-2);overflow:hidden;border:1px solid var(--rule)}
 .meter span{display:block;height:100%;background:var(--ink-soft)}
 .attr.low .meter span{background:var(--bad)}
@@ -353,12 +377,13 @@ textarea{width:100%;background:var(--paper);border:1.5px solid var(--rule);borde
         <section class="box">
           <h2>Equipamento e Artefatos</h2>
           <ul class="list" id="equipList"></ul>
-          <form class="add" data-form="equip"><input id="equipNew" placeholder="Novo item" autocomplete="off"><button class="btn sm">Adicionar</button></form>
-          <div class="weapon">
-            <label class="field"><span class="label">Arma mágica em uso (só uma)</span><input id="armaNome" placeholder="Nenhuma"></label>
-            <label class="field b"><span class="label">Bônus</span><input id="armaBonus" type="number" inputmode="numeric" min="0" max="6" value="0"></label>
-          </div>
-          <p class="hint">O bônus da arma soma à sua força de ataque no combate.</p>
+          <form class="additem" data-form="equip">
+            <label class="field nm"><span class="label">Item</span><input id="equipNew" placeholder="Ex.: Espada mágica" autocomplete="off"></label>
+            <label class="field"><span class="label">Tipo</span><select id="equipTipo"><option value="outro">Comum</option><option value="arma">Arma</option><option value="protecao">Escudo / armadura</option><option value="joia">Joia / amuleto</option></select></label>
+            <label class="field bn"><span class="label">Bônus de ataque</span><input id="equipBonus" class="num" type="number" inputmode="numeric" min="0" max="6" value="0"></label>
+            <button class="btn sm primary">Adicionar</button>
+          </form>
+          <div class="atk" id="atkSummary"></div>
         </section>
         <div class="col" style="gap:14px">
           <section class="box">
@@ -413,12 +438,14 @@ textarea{width:100%;background:var(--paper);border:1.5px solid var(--rule);borde
 const $=s=>document.querySelector(s);
 const LS_KEY="ficha-shamutanti-v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
-const blankMon=()=>({nome:"",hab:"",ene:"",derrotado:false,anotado:false});
+const blankRegras=()=>({danoCriatura:2,danoVoce:2,especial:false,nomeGolpe:"",min:5,danoEsp:6,sorteEvita:true,notas:""});
+const blankMon=()=>({nome:"",hab:"",ene:"",derrotado:false,anotado:false,regras:blankRegras()});
+const TIPO_ITEM={outro:"Comum",arma:"Arma",protecao:"Escudo/armadura",joia:"Joia/amuleto"};
 function defaultState(){
   return {v:1,criado:false,nome:"",classe:"guerreiro",
     ini:{hab:0,ene:0,sor:0},cur:{hab:0,ene:0,sor:0},exceder:{hab:false,ene:false,sor:false},
     notas:{hab:"",ene:"",sor:""},caminho:[],alt:{hab:[],ene:[],sor:[]},ouro:20,tesouros:"",provisoes:2,arma:{nome:"",bonus:0},
-    equip:[{id:uid(),t:"Espada"},{id:uid(),t:"Mochila"}],efeitos:[],pistas:"",pistasList:[],secao:"",
+    equip:[{id:uid(),t:"Espada",tipo:"arma",bonus:0},{id:uid(),t:"Mochila",tipo:"outro",bonus:0}],efeitos:[],pistas:"",pistasList:[],secao:"",
     libra:null,monstros:Array.from({length:12},blankMon),feiticos:[],log:[],combate:null,
     draft:{hab:"",ene:"",sor:"",dh:[],de:[],ds:[]}};
 }
@@ -430,6 +457,11 @@ function migrate(s){const d=defaultState();const o=Object.assign(d,s||{});
   o.notas=Object.assign({hab:"",ene:"",sor:""},s&&s.notas);
   o.alt=Object.assign({hab:[],ene:[],sor:[]},s&&s.alt);["hab","ene","sor"].forEach(k=>{if(!Array.isArray(o.alt[k]))o.alt[k]=[];});
   if(!Array.isArray(o.monstros))o.monstros=[];while(o.monstros.length<12)o.monstros.push(blankMon());
+  o.monstros=o.monstros.map(m=>Object.assign(blankMon(),m,{regras:Object.assign(blankRegras(),m&&m.regras)}));
+  if(!Array.isArray(o.equip))o.equip=[];
+  o.equip=o.equip.map(i=>Object.assign({tipo:/espada|adaga|machado|lan[cç]a|clava|arco/i.test(i.t||"")?"arma":"outro",bonus:0},i));
+  if(o.arma&&o.arma.nome&&(+o.arma.bonus||0)>0&&!o.equip.some(i=>i.t===o.arma.nome)){o.equip.push({id:uid(),t:o.arma.nome,tipo:"arma",bonus:+o.arma.bonus});}
+  o.arma={nome:"",bonus:0};
   o.draft=Object.assign({hab:"",ene:"",sor:"",dh:[],de:[],ds:[]},s&&s.draft);return o;}
 
 let state=defaultState();
@@ -480,6 +512,12 @@ const die=(v,lg)=>`<span class="die${lg?" lg":""}" role="img" aria-label="${v}">
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const NAMES={hab:"Habilidade",ene:"Energia",sor:"Sorte"};
 const TIPOS={bonus:"bônus",penalidade:"penalidade",maldicao:"maldição",doenca:"doença"};
+function atkBonus(){
+  const it=state.equip.filter(i=>(+i.bonus||0)>0);
+  const armas=it.filter(i=>i.tipo==="arma").sort((a,b)=>b.bonus-a.bonus);
+  const conta=[...(armas.length?[armas[0]]:[]),...it.filter(i=>i.tipo!=="arma")];
+  return {total:conta.reduce((x,i)=>x+(+i.bonus||0),0),conta,ignoradas:armas.slice(1)};
+}
 function clampCur(k,v){v=Math.max(0,Math.round(v));if(!state.exceder[k]&&state.ini[k])v=Math.min(v,state.ini[k]);return v;}
 function setCur(k,v,why){const b4=state.cur[k];state.cur[k]=clampCur(k,v);const d=state.cur[k]-b4;
   if(d){const h=state.alt[k];h.push({d,s:state.secao||"",w:why||""});if(h.length>60)h.splice(0,h.length-60);}return d;}
@@ -559,9 +597,12 @@ function renderGoods(){
   const t=$("#tesouros");if(document.activeElement!==t)t.value=state.tesouros;
   $("#provVal").textContent=state.provisoes;
   const p=$("#pistas");if(document.activeElement!==p)p.value=state.pistas;
-  const an=$("#armaNome");if(document.activeElement!==an)an.value=state.arma.nome;
-  const ab=$("#armaBonus");if(document.activeElement!==ab)ab.value=state.arma.bonus;
-  $("#equipList").innerHTML=state.equip.length?state.equip.map(i=>`<li><span class="t">${esc(i.t)}</span><button class="x" data-act="rmequip" data-id="${i.id}" aria-label="Remover ${esc(i.t)}">×</button></li>`).join(""):`<li class="empty">Mochila vazia</li>`;
+  const ab=atkBonus(),contaIds=new Set(ab.conta.map(i=>i.id));
+  const TT={outro:"",arma:"warn",protecao:"good",joia:"good"};
+  $("#equipList").innerHTML=state.equip.length?state.equip.map(i=>`<li class="${contaIds.has(i.id)?"counts":""}"><span class="t">${esc(i.t)}${TIPO_ITEM[i.tipo]&&i.tipo!=="outro"?` <span class="tag ${TT[i.tipo]}">${TIPO_ITEM[i.tipo]}</span>`:""}</span>
+    <label class="ib" title="Bônus de ataque deste item">atq +<input type="number" min="0" max="6" inputmode="numeric" value="${+i.bonus||0}" data-ibonus="${i.id}" aria-label="Bônus de ataque de ${esc(i.t)}"></label>
+    <button class="x" data-act="rmequip" data-id="${i.id}" aria-label="Remover ${esc(i.t)}">×</button></li>`).join(""):`<li class="empty">Mochila vazia</li>`;
+  $("#atkSummary").innerHTML=ab.total?`Bônus de ataque em combate: <b class="num">+${ab.total}</b> <span class="why">(${ab.conta.map(i=>esc(i.t)+" +"+i.bonus).join(", ")})${ab.ignoradas.length?`. Só uma arma conta por vez: ${ab.ignoradas.map(i=>esc(i.t)).join(", ")} não soma.`:""}</span>`:`<span class="why">Nenhum item dá bônus de ataque. Ao adicionar uma espada, escudo ou joia que aumente o ataque, informe o bônus.</span>`;
   const TL={bonus:["good","Bônus"],penalidade:["warn","Penalidade"],maldicao:["bad","Maldição"],doenca:["bad","Doença"]};
   $("#efeitoList").innerHTML=state.efeitos.length?state.efeitos.map(e=>`<li><span class="tag ${TL[e.k][0]}">${TL[e.k][1]}</span><span class="t">${esc(e.t)}</span><button class="x" data-act="rmefeito" data-id="${e.id}" aria-label="Remover">×</button></li>`).join(""):`<li class="empty">Nada por enquanto</li>`;
   $("#pistaList").innerHTML=state.pistasList.length?state.pistasList.map(p=>`<li><span class="t">${esc(p.t)}${p.s?` <span class="hint" style="font-style:normal">· §${esc(p.s)}</span>`:""}</span><button class="x" data-act="rmpista" data-id="${p.id}" aria-label="Remover pista">×</button></li>`).join(""):`<li class="empty">Nenhuma pista ainda</li>`;
@@ -575,7 +616,8 @@ function renderMonsters(){
       <input class="mname" data-mon="${i}" data-f="nome" value="${esc(m.nome)}" placeholder="Criatura ${i+1}" aria-label="Nome da criatura ${i+1}">
       <div class="st"><span>Habilidade:</span><input class="num" data-mon="${i}" data-f="hab" type="number" inputmode="numeric" value="${esc(m.hab)}" aria-label="Habilidade da criatura ${i+1}">
       <span>Energia:</span><input class="num" data-mon="${i}" data-f="ene" type="number" inputmode="numeric" value="${esc(m.ene)}" aria-label="Energia da criatura ${i+1}"></div>
-      <div class="acts"><button class="btn sm primary" data-act="lutar" data-i="${i}" ${!state.criado?"disabled":""}>Lutar</button><button class="btn sm ghost" data-act="limparmon" data-i="${i}" aria-label="Limpar caixa ${i+1}">Limpar</button></div>
+      ${regraResumo(m)?`<div class="rule" title="${esc(regraResumo(m))}">★ Regra especial</div>`:""}
+      <div class="acts"><button class="btn sm primary" data-act="lutar" data-i="${i}" ${!state.criado?"disabled":""}>Lutar</button><button class="btn sm ghost" data-act="regras" data-i="${i}" aria-label="Regras especiais da criatura ${i+1}">Regras</button><button class="x" data-act="limparmon" data-i="${i}" aria-label="Limpar caixa ${i+1}" title="Limpar caixa">×</button></div>
     </div>`;}).join("");
 }
 function renderLog(){
@@ -609,20 +651,62 @@ function noteEncounter(m){
 let pendingConfirm=null;
 function confirmBox(title,text,ok,fn){pendingConfirm=fn;openModal(`<h3>${esc(title)}</h3><p style="margin:0">${text}</p><div class="foot"><button class="btn ghost" data-act="close">Cancelar</button><button class="btn primary" data-act="confirmok">${esc(ok)}</button></div>`,"confirm");}
 
+function regraResumo(m){
+  const r=m.regras||blankRegras(),p=[];
+  if(r.especial)p.push(`${r.nomeGolpe||"Golpe especial"}: ao ferir, 1 dado de ${r.min} a 6 causa ${r.danoEsp} de dano${r.sorteEvita?" (Sorte reduz ao normal)":""}`);
+  if(+r.danoCriatura!==2)p.push(`golpe da criatura tira ${r.danoCriatura}`);
+  if(+r.danoVoce!==2)p.push(`seu golpe tira ${r.danoVoce}`);
+  if(r.notas)p.push(r.notas);
+  return p.join(" · ");
+}
+function openRegras(i){
+  const m=state.monstros[i],r=m.regras;
+  openModal(`<h3>Regras especiais</h3>
+  <p class="hint" style="font-style:normal">${esc(m.nome||"Criatura "+(i+1))}. Use quando a seção do livro trouxer regras próprias para o combate.</p>
+  <form class="rform" data-form="regras" data-i="${i}">
+    <label class="field"><span class="label">Dano do golpe da criatura</span><input type="number" id="rgDC" min="0" max="20" value="${r.danoCriatura}"></label>
+    <label class="field"><span class="label">Dano do seu golpe</span><input type="number" id="rgDV" min="0" max="20" value="${r.danoVoce}"></label>
+    <fieldset>
+      <legend><label class="chk"><input type="checkbox" id="rgEsp" ${r.especial?"checked":""}> Golpe especial quando a criatura fere você</label></legend>
+      <label class="field full"><span class="label">Nome do golpe</span><input type="text" id="rgNome" value="${esc(r.nomeGolpe)}" placeholder="Ex.: ferrão venenoso da cauda"></label>
+      <label class="field"><span class="label">Rolar 1 dado: acontece com</span><span class="inline"><input type="number" id="rgMin" min="1" max="6" value="${r.min}"><span class="hint" style="font-style:normal">ou mais</span></span></label>
+      <label class="field"><span class="label">Dano do golpe especial</span><input type="number" id="rgDE" min="0" max="30" value="${r.danoEsp}"></label>
+      <label class="chk full"><input type="checkbox" id="rgSorte" ${r.sorteEvita?"checked":""}> Teste de Sorte: se for sortudo, o dano volta ao normal</label>
+    </fieldset>
+    <label class="field full"><span class="label">Anotações sobre a criatura</span><textarea id="rgNotas" style="min-height:60px" placeholder="Outras regras da seção">${esc(r.notas)}</textarea></label>
+    <div class="foot full" style="justify-content:space-between">
+      <button class="btn ghost" type="button" data-act="modeloManticora" data-i="${i}">Usar modelo: Mantícora</button>
+      <span class="inline"><button class="btn ghost" type="button" data-act="limparRegras" data-i="${i}">Sem regras</button><button class="btn ghost" type="button" data-act="close">Cancelar</button><button class="btn primary">Salvar regras</button></span>
+    </div>
+  </form>`,"regras");
+}
+function saveRegras(i){
+  const m=state.monstros[i],n=id=>parseInt($(id).value,10);
+  commit();
+  m.regras={danoCriatura:Math.max(0,isNaN(n("#rgDC"))?2:n("#rgDC")),danoVoce:Math.max(0,isNaN(n("#rgDV"))?2:n("#rgDV")),
+    especial:$("#rgEsp").checked,nomeGolpe:$("#rgNome").value.trim(),min:Math.min(6,Math.max(1,n("#rgMin")||5)),
+    danoEsp:Math.max(0,isNaN(n("#rgDE"))?6:n("#rgDE")),sorteEvita:$("#rgSorte").checked,notas:$("#rgNotas").value.trim()};
+  const r=regraResumo(m);if(r)log(`Regras especiais de ${m.nome||"Criatura "+(i+1)}: ${r.replace(/[.\s]+$/,"")}.`);
+  closeModal();renderMonsters();renderLog();save();
+}
 function renderCombat(){
   const c=state.combate;if(!c)return;const m=state.monstros[c.i];
-  const mh=+m.hab||0,me=+m.ene||0,youHab=state.cur.hab,bon=+state.arma.bonus||0;
+  const mh=+m.hab||0,me=+m.ene||0,youHab=state.cur.hab,bon=atkBonus().total,R=m.regras||blankRegras();
   const u=c.ult;const over=me<=0||state.cur.ene<=0;
   let out="";
   if(u){
     const cls=u.res==="voce"?"good":u.res==="criatura"?"bad":"";
-    const main=u.res==="voce"?`Você feriu ${esc(m.nome||"a criatura")}: −2 de Energia.`:u.res==="criatura"?`${esc(m.nome||"A criatura")} feriu você: −2 de Energia.`:"Empate. Ambos erraram.";
+    const main=u.res==="voce"?`Você feriu ${esc(m.nome||"a criatura")}: −${u.dano} de Energia.`:u.res==="criatura"?`${esc(m.nome||"A criatura")} feriu você: −${u.dano} de Energia.`:"Empate. Ambos erraram.";
     let luck="";
+    if(u.esp){const e=u.esp,gn=esc(R.nomeGolpe||"golpe especial");
+      luck+=`<p class="inline">${die(e.d)} ${e.hit?`<span><span class="tag bad">${gn}</span> Rolou ${e.d}: dano de ${e.dano} pontos${e.sorteEvita?", a menos que você seja sortudo":""}.</span>`:`<span>Rolou ${e.d}: ataque normal.</span>`}</p>`;
+      if(e.res)luck+=`<p><span class="tag ${e.res.lucky?"good":"bad"}">${e.res.lucky?"Sortudo":"Azarado"}</span> Rolou ${e.res.total} contra Sorte ${e.res.before}. ${e.res.txt}</p>`;}
     if(u.sorte){luck=`<p><span class="tag ${u.sorte.lucky?"good":"bad"}">${u.sorte.lucky?"Sortudo":"Azarado"}</span> Rolou ${u.sorte.total} contra Sorte ${u.sorte.before}. ${u.sorte.txt}</p>`;}
     out=`<div class="outcome ${cls}"><p>${main}</p>${luck}</div>`;
   }
-  let luckBtn="";
-  if(u&&!u.sorte&&u.res!=="empate"&&!over){
+  let luckBtn="";const espPend=u&&u.esp&&u.esp.hit&&u.esp.sorteEvita&&!u.esp.res;
+  if(espPend){luckBtn=`<button class="btn primary" data-act="sorteEspecial">Testar a Sorte contra o ${esc(R.nomeGolpe||"golpe especial")}</button>`;}
+  else if(u&&!u.sorte&&!(u.esp&&u.esp.hit)&&u.res!=="empate"&&!over){
     luckBtn=`<button class="btn" data-act="sorteCombate" ${state.cur.sor<=0?"disabled":""}>Testar a Sorte (${u.res==="voce"?"aumentar o ferimento":"reduzir o ferimento"})</button>`;
   }
   let end="";
@@ -632,7 +716,7 @@ function renderCombat(){
     <header style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h3>Batalha</h3><span class="label num">Rodada ${c.rodada}</span></header>
     <div class="vs">
       <div class="fighter${u&&u.res==="voce"?" win":""}"><span class="who">${esc(state.nome||"Você")}</span>
-        <div class="stats num"><span>Hab <b>${youHab}</b>${bon?` +${bon}`:""}</span><span>Ene <b>${state.cur.ene}</b></span><span>Sorte <b>${state.cur.sor}</b></span></div>
+        <div class="stats num"><span>Hab <b>${youHab}</b>${bon?` <span title="Bônus de ataque dos itens">+${bon} itens</span>`:""}</span><span>Ene <b>${state.cur.ene}</b></span><span>Sorte <b>${state.cur.sor}</b></span></div>
         <div class="dice">${u?u.dv.map(v=>die(v,1)).join(""):""}</div>
         <div class="force num">${u?`Força de ataque <b>${u.fv}</b>`:"Força = 2 dados + Habilidade"}</div></div>
       <div class="mid">×</div>
@@ -641,10 +725,11 @@ function renderCombat(){
         <div class="dice">${u?u.dm.map(v=>die(v,1)).join(""):""}</div>
         <div class="force num">${u?`Força de ataque <b>${u.fm}</b>`:"Força = 2 dados + Habilidade"}</div></div>
     </div>
+    ${regraResumo(m)?`<div class="rulebox"><b>Regra especial.</b> ${esc(regraResumo(m))}</div>`:""}
     ${out}${end}
     <div class="foot" style="justify-content:space-between">
       <span class="inline">${luckBtn}</span>
-      <span class="inline"><button class="btn ghost" data-act="close">${over?"Fechar":"Sair do combate"}</button>${over?"":`<button class="btn primary" data-act="rodada">Rolar rodada</button>`}</span>
+      <span class="inline"><button class="btn ghost" data-act="close">${over?"Fechar":"Sair do combate"}</button>${over?"":`<button class="btn${espPend?"":" primary"}" data-act="rodada" ${espPend?"disabled title=\"Resolva o Teste de Sorte primeiro\"":""}>Rolar rodada</button>`}</span>
     </div>
     <p class="hint">Fugir ou lutar contra vários inimigos segue as instruções da seção. Ajuste a Energia da criatura na caixa de encontro se o texto mandar.</p>`;
 }
@@ -661,13 +746,17 @@ function startCombat(i){
 }
 function combatRound(){
   const c=state.combate,m=state.monstros[c.i];commit();
-  const dm=roll(2),dv=roll(2),fm=sum(dm)+(+m.hab||0),fv=sum(dv)+state.cur.hab+(+state.arma.bonus||0);
-  c.rodada++;let res="empate";
-  if(fv>fm){res="voce";m.ene=Math.max(0,(+m.ene||0)-2);}
-  else if(fm>fv){res="criatura";setCur("ene",state.cur.ene-2,"ferido em combate");}
-  c.ult={dm,dv,fm,fv,res,sorte:null};
-  const nm=m.nome||"criatura";
-  log(`Rodada ${c.rodada} contra ${nm}: ${fv} × ${fm}. ${res==="voce"?nm+" perde 2 de Energia ("+m.ene+").":res==="criatura"?"Você perde 2 de Energia ("+state.cur.ene+").":"Empate."}`);
+  const R=m.regras||blankRegras(),bon=atkBonus().total;
+  const dm=roll(2),dv=roll(2),fm=sum(dm)+(+m.hab||0),fv=sum(dv)+state.cur.hab+bon;
+  c.rodada++;let res="empate",dano=0,esp=null;
+  if(fv>fm){res="voce";dano=+R.danoVoce;m.ene=Math.max(0,(+m.ene||0)-dano);}
+  else if(fm>fv){res="criatura";dano=+R.danoCriatura;setCur("ene",state.cur.ene-dano,"ferido em combate");
+    if(R.especial){const d=d6(),hit=d>=R.min;esp={d,hit,dano:+R.danoEsp,sorteEvita:!!R.sorteEvita,res:null};
+      if(hit&&!R.sorteEvita){const extra=Math.max(0,R.danoEsp-dano);setCur("ene",state.cur.ene-extra,R.nomeGolpe||"golpe especial");}}}
+  c.ult={dm,dv,fm,fv,res,dano,esp,sorte:null};
+  const nm=m.nome||"criatura",gn=R.nomeGolpe||"golpe especial";
+  log(`Rodada ${c.rodada} contra ${nm}: ${fv} × ${fm}. ${res==="voce"?nm+" perde "+dano+" de Energia ("+m.ene+").":res==="criatura"?"Você perde "+dano+" de Energia ("+state.cur.ene+").":"Empate."}`);
+  if(esp)log(esp.hit?`${nm} acertou o ${gn} (dado ${esp.d})${esp.sorteEvita?": Teste de Sorte para evitar o dano de "+esp.dano+".":": dano de "+esp.dano+" (Energia "+state.cur.ene+")."}`:`Dado do ${gn}: ${esp.d}, ataque normal.`);
   afterCombatChange();
 }
 function combatLuck(){
@@ -677,6 +766,15 @@ function combatLuck(){
   else{if(r.lucky){setCur("ene",state.cur.ene+1,"sorte em combate");txt="Você amorteceu o golpe e recupera 1 ponto de Energia.";}else{setCur("ene",state.cur.ene-1,"azar em combate");txt="Golpe mais sério: você perde mais 1 ponto de Energia.";}}
   u.sorte=Object.assign(r,{txt});
   log(`Testou a Sorte em combate (${r.total} contra ${r.before}): ${r.lucky?"sortudo":"azarado"}. ${txt} Sorte agora ${state.cur.sor}.`);
+  afterCombatChange();
+}
+function combatSpecialLuck(){
+  const c=state.combate,m=state.monstros[c.i],u=c.ult,e=u.esp,R=m.regras;commit();
+  const r=testLuck();let txt;
+  if(r.lucky)txt=`O dano fica normal (${u.dano}).`;
+  else{const extra=Math.max(0,e.dano-u.dano);setCur("ene",state.cur.ene-extra,R.nomeGolpe||"golpe especial");txt=`Você sofre o dano total de ${e.dano} (mais ${extra} além do golpe normal).`;}
+  e.res=Object.assign(r,{txt});
+  log(`Teste de Sorte contra o ${R.nomeGolpe||"golpe especial"} (${r.total} contra ${r.before}): ${r.lucky?"sortudo":"azarado"}. ${txt} Energia ${state.cur.ene}, Sorte ${state.cur.sor}.`);
   afterCombatChange();
 }
 function afterCombatChange(){
@@ -716,7 +814,8 @@ function openRules(){
   <div><h4>Testar a Sorte</h4><p>Role 2 dados. Resultado menor ou igual à Sorte atual: sortudo. Maior: azarado. Toda vez perca 1 ponto de Sorte.</p></div>
   <div><h4>Sorte em batalha</h4><p>Depois de ferir: sortudo tira mais 2 da criatura; azarado devolve 1 a ela. Depois de ser ferido: sortudo recupera 1; azarado perde mais 1.</p></div>
   <div><h4>Provisões e ouro</h4><p>Comece com 20 peças de ouro e 2 refeições. Coma só quando o texto permitir, uma refeição por vez.</p></div>
-  <div><h4>Armas mágicas</h4><p>Só uma arma mágica dá bônus por vez.</p></div>
+  <div><h4>Itens que aumentam o ataque</h4><p>Ao adicionar um item à mochila, informe o tipo e o bônus de ataque. Só uma arma dá bônus por vez (vale a de maior bônus); escudos, armaduras e joias somam.</p></div>
+  <div><h4>Criaturas com regras próprias</h4><p>Use “Regras” na caixa de encontro para mudar o dano dos golpes ou criar um golpe especial, como o ferrão da Mantícora: ao ferir, role 1 dado; com 5 ou 6 o golpe causa 6 de dano, a menos que você seja sortudo num Teste de Sorte.</p></div>
   <div><h4>Magos</h4><p>Cada feitiço tem código de três letras e custa Energia. O Grimório não pode ser consultado depois que a aventura começa.</p></div>
   </div><div class="foot"><button class="btn primary" data-act="close">Fechar</button></div>`,"rules");
 }
@@ -823,6 +922,12 @@ document.addEventListener("click",e=>{
   if(b.type==="checkbox")return;
   switch(a){
     case "undo":undo();break;
+    case "regras":openRegras(+b.dataset.i);break;
+    case "sorteEspecial":combatSpecialLuck();break;
+    case "modeloManticora":{const i=+b.dataset.i;if(!state.monstros[i].nome){state.monstros[i].nome="Mantícora";}
+      $("#rgEsp").checked=true;$("#rgNome").value="ferrão venenoso da cauda de escorpião";$("#rgMin").value=5;$("#rgDE").value=6;$("#rgSorte").checked=true;$("#rgDC").value=2;$("#rgDV").value=2;
+      if(!$("#rgNotas").value)$("#rgNotas").value="Veneno: 6 de dano a menos que seja sortudo.";break;}
+    case "limparRegras":{const i=+b.dataset.i;commit();state.monstros[i].regras=blankRegras();closeModal();renderMonsters();save();break;}
     case "caminhoVolta":if(state.caminho.length){commit();state.caminho.pop();state.secao=state.caminho[state.caminho.length-1]||"";renderTrail();renderHeader();save();}break;
     case "altneg":case "altpos":applyAlt(k,a==="altneg"?-1:1);break;
     case "salvarJogo":openSaveModal();break;
@@ -867,6 +972,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="loadFile"&&t.files&&t.files[0]){loadFromFile(t.files[0]);return;}
+  if(t.dataset.ibonus){const it=state.equip.find(x=>x.id===t.dataset.ibonus);if(it){const v=Math.max(0,Math.min(6,parseInt(t.value,10)||0));if(v!==(+it.bonus||0)){commit();it.bonus=v;log(`Bônus de ataque de ${it.t}: +${v}.`);}renderGoods();renderLog();save();}return;}
   if(t.dataset.act==="exceder"){commit();state.exceder[t.dataset.k]=t.checked;if(!t.checked)setCur(t.dataset.k,state.cur[t.dataset.k]);renderAll();save();}
   if(t.dataset.ini){const k=t.dataset.ini,v=parseInt(t.value,10);if(v>=0&&v!==state.ini[k]){commit();const had=state.ini[k];state.ini[k]=v;if(!had&&!state.cur[k])state.cur[k]=v;if(!state.exceder[k]&&v)state.cur[k]=Math.min(state.cur[k],v);state.criado=true;log(`${NAMES[k]} inicial ${had?"corrigida":"anotada"}: ${v}.`);}renderAll();save();}
   if(t.dataset.mon!==undefined){const m=state.monstros[+t.dataset.mon];const f=t.dataset.f;commit();m[f]=f==="nome"?t.value:(t.value===""?"":String(Math.max(0,parseInt(t.value,10)||0)));if(f==="ene"&&(m.ene===""||+m.ene>0))m.derrotado=false;if(f!=="nome")t.value=m[f];if(noteEncounter(m))renderLog();const card=t.closest(".mon");card.classList.toggle("dead",m.derrotado);card.classList.toggle("blank",!m.nome&&m.hab===""&&m.ene==="");save();}
@@ -877,8 +983,7 @@ document.addEventListener("input",e=>{
   else if(t.id==="secao"){state.secao=t.value.trim();save();}
   else if(t.id==="tesouros"){state.tesouros=t.value;save();}
   else if(t.id==="pistas"){state.pistas=t.value;save();}
-  else if(t.id==="armaNome"){state.arma.nome=t.value;save();}
-  else if(t.id==="armaBonus"){state.arma.bonus=Math.max(0,parseInt(t.value,10)||0);save();}
+
   else if(t.dataset.nota){state.notas[t.dataset.nota]=t.value;save();}
   else if(t.dataset.draft){state.draft[t.dataset.draft]=t.value;save();}
 });
@@ -890,8 +995,12 @@ document.addEventListener("keydown",e=>{
 $("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
 document.addEventListener("submit",e=>{
   e.preventDefault();const f=e.target.dataset.form;
-  if(f==="equip"){const i=$("#equipNew");const v=i.value.trim();if(!v)return;commit();state.equip.push({id:uid(),t:v});log(`Adicionado à mochila: ${v}.`);i.value="";renderGoods();renderLog();save();i.focus();}
+  if(f==="equip"){const i=$("#equipNew");const v=i.value.trim();if(!v){i.focus();return;}const tipo=$("#equipTipo").value,bonus=Math.max(0,Math.min(6,parseInt($("#equipBonus").value,10)||0));
+    commit();state.equip.push({id:uid(),t:v,tipo,bonus});
+    log(`Adicionado à mochila: ${v}${tipo!=="outro"||bonus?` (${TIPO_ITEM[tipo].toLowerCase()}${bonus?`, +${bonus} de ataque`:""})`:""}.`);
+    i.value="";$("#equipBonus").value="0";$("#equipTipo").value="outro";renderGoods();renderLog();renderAttrs();save();i.focus();}
   if(f==="efeito"){const i=$("#efeitoNew");const v=i.value.trim();if(!v)return;commit();const k=$("#efeitoTipo").value;state.efeitos.push({id:uid(),k,t:v});log(`Novo efeito (${TIPOS[k]}): ${v}.`);i.value="";renderGoods();renderLog();save();i.focus();}
+  if(f==="regras"){saveRegras(+e.target.dataset.i);return;}
   if(f==="caminho"){const i=$("#pagina");const v=i.value.trim().replace(/^§/,"");
     if(!/^[0-9]{1,5}[a-zA-Z]?$/.test(v)){i.focus();showTray([],"Página inválida","Digite o número da página, por exemplo 25.",["warn","Atenção"]);return;}
     commit();state.caminho.push(v);state.secao=v;i.value="";renderTrail();renderHeader();save();i.focus();return;}

@@ -25,6 +25,18 @@ Cada atributo (Habilidade, Energia, Sorte) tem:
 - Combate, testes de Sorte, refeições, feitiços e Libra registram suas alterações automaticamente.
 - **Anotação:** linha livre para observações.
 
+## Itens que aumentam o ataque
+Ao adicionar um item à mochila, escolha o **tipo** (comum, arma, escudo/armadura, joia/amuleto) e informe o **bônus de ataque**.
+O bônus soma à sua força de ataque nos combates. Só **uma arma** conta por vez (vale a de maior bônus); escudos, armaduras e joias somam.
+O bônus de cada item pode ser corrigido direto na lista da mochila.
+
+## Criaturas com regras especiais
+Na caixa de encontro, clique em **Regras** para:
+- mudar o dano do golpe da criatura ou do seu golpe;
+- criar um **golpe especial**: quando a criatura fere você, rola-se 1 dado; a partir do valor escolhido o golpe causa um dano maior, que pode ser evitado com Teste de Sorte;
+- anotar outras regras da seção.
+O botão **Usar modelo: Mantícora** preenche o ferrão venenoso: com 5 ou 6 no dado, 6 de dano, a menos que você seja sortudo.
+
 ## Regras aplicadas pela ficha
 - Criação: Guerreiro (Habilidade 1d6+6) ou Mago (1d6+4); Energia 2d6+12; Sorte 1d6+6. 20 peças de ouro, 2 provisões, espada e mochila.
 - Valores atuais nunca passam dos iniciais, salvo quando marcado "passar do inicial".
